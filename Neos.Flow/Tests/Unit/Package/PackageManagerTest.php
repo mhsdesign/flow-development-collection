@@ -174,7 +174,52 @@ class PackageManagerTest extends UnitTestCase
 
         $packageStates = require('vfs://Test/Configuration/PackageStates.php');
         $actualPackageKeys = array_keys($packageStates['packages']);
-        self::assertEquals(sort($expectedPackageKeys), sort($actualPackageKeys));
+        self::assertEqualsCanonicalizing($expectedPackageKeys, $actualPackageKeys);
+    }
+
+    /**
+     * @test
+     */
+    public function scanAvailablePackagesTraversesThePackagesDirectoryAndRegistersPackagesItFindsAndRespectsPackageCollections()
+    {
+        $expectedPackageKeys = [
+            'neos/flow-test',
+            'neos/flow',
+            'neos/yetanothertestpackage',
+            'robertlemke/flow/nothingelse'
+        ];
+
+        $packages = [
+            'Packages' => [
+                'Application' => [
+                    'Neos.Flow.Test' => ['composer.json' => '{"name": "neos/flow-test", "type": "flow-test"}'],
+                    'FrameworkCollection' => [
+                        'composer.json' => '{"name": "neos/flow-development-collection", "type": "neos-package-collection"}',
+                        'Neos.Flow' => ['composer.json' => '{"name": "neos/flow", "type": "neos-package"}'],
+                        'Neos.YetAnotherTestPackage' => ['composer.json' => '{"name": "neos/yetanothertestpackage", "type": "neos-package"}'],
+                        'NestedCollection' => [
+                            'composer.json' => '{"name": "neos/nestedcollection", "type": "neos-package-collection"}',
+                            'RobertLemke.Flow.NothingElse' => ['composer.json' => '{"name": "robertlemke/flow/nothingelse", "type": "neos-package"}'],
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        vfsStream::setup('Test', 0770, $packages);
+
+        $packageManager = $this->getAccessibleMock(PackageManager::class, ['emitPackageStatesUpdated'], ['vfs://Test/Configuration/PackageStates.php', 'vfs://Test/Packages/']);
+
+        $this->inject($packageManager, 'packages', []);
+        $packageFactory = new PackageFactory();
+        $this->inject($packageManager, 'packageFactory', $packageFactory);
+
+        $packageManager->rescanPackages();
+
+        $packageStates = require('vfs://Test/Configuration/PackageStates.php');
+        $actualPackageKeys = array_keys($packageStates['packages']);
+
+        self::assertEqualsCanonicalizing($expectedPackageKeys, $actualPackageKeys);
     }
 
     /**
