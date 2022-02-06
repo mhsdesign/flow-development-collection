@@ -90,11 +90,19 @@ EOD;
         while (true) {
             $filepaths = Debugger::findProxyAndShortFilePath($exception->getFile());
             $filePathAndName = $filepaths['proxy'] !== '' ? $filepaths['proxy'] : $filepaths['short'];
-            $exceptionMessageParts = $this->splitExceptionMessage($exception->getMessage());
 
-            $exceptionHeader .= '<h1 class="ExceptionSubject">' . htmlspecialchars($exceptionMessageParts['subject']) . '</h1>';
-            if ($exceptionMessageParts['body'] !== '') {
-                $exceptionHeader .= '<p class="ExceptionBody">' . nl2br(htmlspecialchars($exceptionMessageParts['body'])) . '</p>';
+            [
+                'subject' => $exceptionMessagePartSubject,
+                'body' => $exceptionMessagePartBody,
+            ] = $this->splitExceptionMessage($exception->getMessage());
+
+            $exceptionHeader .= '<h1 class="ExceptionSubject">' . htmlspecialchars($exceptionMessagePartSubject) . '</h1>';
+            if ($exceptionMessagePartBody !== '') {
+                if (strpos($exceptionMessagePartBody, '  ') !== false) {
+                    $exceptionHeader .= '<p class="ExceptionBodyPre">' . htmlspecialchars($exceptionMessagePartBody) . '</p>';
+                } else {
+                    $exceptionHeader .= '<p class="ExceptionBody">' . nl2br(htmlspecialchars($exceptionMessagePartBody)) . '</p>';
+                }
             }
 
             $exceptionHeader .= '<table class="Flow-Debug-Exception-Meta"><tbody>';
