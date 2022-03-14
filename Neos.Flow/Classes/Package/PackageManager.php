@@ -661,7 +661,7 @@ class PackageManager
 
             $potentialPackageDirectory = $fileInfo->getPathname() . '/';
 
-            if (is_file($potentialPackageDirectory . 'composer.json')) {
+            if (is_file($potentialPackageDirectory . 'composer.json') === false) {
                 // no composer.json was found - search recursive for a composer.json
                 yield from self::findComposerPackagesInDirectory($potentialPackageDirectory);
                 continue;
