@@ -186,21 +186,24 @@ class PackageManagerTest extends UnitTestCase
             'neos/flow-test',
             'neos/flow',
             'neos/yetanothertestpackage',
-            'robertlemke/flow/nothingelse'
+//            'robertlemke/flow/nothingelse'
         ];
 
         $packages = [
             'Packages' => [
+//                'node_modules' => [
+//                    'foo' => [
+//                        'composer.json' => '{"name": "neos/bow", "type": "neos-package"}'
+//                    ]
+//                ],
                 'Application' => [
                     'Neos.Flow.Test' => ['composer.json' => '{"name": "neos/flow-test", "type": "flow-test"}'],
                     'FrameworkCollection' => [
                         'composer.json' => '{"name": "neos/flow-development-collection", "type": "neos-package-collection"}',
-                        'Neos.Flow' => ['composer.json' => '{"name": "neos/flow", "type": "neos-package"}'],
+                        'Neos.Flow' => [
+                            'composer.json' => '{"name": "neos/flow", "type": "neos-package"}',
+                        ],
                         'Neos.YetAnotherTestPackage' => ['composer.json' => '{"name": "neos/yetanothertestpackage", "type": "neos-package"}'],
-                        'NestedCollection' => [
-                            'composer.json' => '{"name": "neos/nestedcollection", "type": "neos-package-collection"}',
-                            'RobertLemke.Flow.NothingElse' => ['composer.json' => '{"name": "robertlemke/flow/nothingelse", "type": "neos-package"}'],
-                        ]
                     ]
                 ]
             ]

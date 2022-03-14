@@ -643,7 +643,7 @@ class PackageManager
         foreach (self::findComposerPackagesInPath($startingDirectory) as $packagePath) {
             $composerManifest = ComposerUtility::getComposerManifest($packagePath);
             if (isset($composerManifest['type']) && $composerManifest['type'] === 'neos-package-collection') {
-                yield from self::findComposerPackagesInPathAndInsideCollections($packagePath);
+                yield from self::findComposerPackagesInPath($packagePath);
                 continue;
             }
             yield $packagePath;
@@ -652,32 +652,33 @@ class PackageManager
 
     /**
      * Recursively traverses directories from the given starting points and returns all folder paths that contain a composer.json.
+     * (Stop at folder with composer.json)
      *
      * @param string $startingDirectory
      * @return \Generator
      */
     protected function findComposerPackagesInPath(string $startingDirectory): ?\Generator
     {
-        $directories = [$startingDirectory];
-        while ($directories !== []) {
-            $currentDirectory = array_pop($directories);
-            if ($handle = opendir($currentDirectory)) {
-                while (false !== ($filename = readdir($handle))) {
-                    if (strpos($filename, '.') === 0) {
-                        continue;
-                    }
-                    $pathAndFilename = $currentDirectory . $filename;
-                    if (is_dir($pathAndFilename)) {
-                        $potentialPackageDirectory = $pathAndFilename . '/';
-                        if (is_file($potentialPackageDirectory . 'composer.json')) {
-                            yield $potentialPackageDirectory;
-                            continue;
-                        }
-                        $directories[] = $potentialPackageDirectory;
-                    }
-                }
-                closedir($handle);
+        $directories = new \DirectoryIterator($startingDirectory);
+
+        /** @var \SplFileInfo $fileInfo */
+        foreach ($directories as $fileInfo) {
+            if($fileInfo->isDot()) {
+                continue;
             }
+            if ($fileInfo->isDir() === false) {
+                continue;
+            }
+
+            $potentialPackageDirectory = $fileInfo->getPathname() . '/';
+
+            if (is_file($potentialPackageDirectory . 'composer.json') === false) {
+                // search recursive for a composer.json
+                yield from self::findComposerPackagesInPath($potentialPackageDirectory);
+                continue;
+            }
+
+            yield $potentialPackageDirectory;
         }
     }
 
