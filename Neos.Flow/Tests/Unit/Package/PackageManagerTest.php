@@ -166,7 +166,7 @@ class PackageManagerTest extends UnitTestCase
 
         $packageManager = $this->getAccessibleMock(PackageManager::class, ['emitPackageStatesUpdated'], ['vfs://Test/Configuration/PackageStates.php', 'vfs://Test/Packages/']);
 
-        $packageFactory = new PackageFactory($packageManager);
+        $packageFactory = new PackageFactory();
         $this->inject($packageManager, 'packageFactory', $packageFactory);
 
         $packageManager->_set('packages', []);
@@ -174,7 +174,7 @@ class PackageManagerTest extends UnitTestCase
 
         $packageStates = require('vfs://Test/Configuration/PackageStates.php');
         $actualPackageKeys = array_keys($packageStates['packages']);
-        self::assertEqualsCanonicalizing($expectedPackageKeys, $actualPackageKeys);
+        self::assertSame($expectedPackageKeys, $actualPackageKeys);
     }
 
     /**
@@ -186,23 +186,15 @@ class PackageManagerTest extends UnitTestCase
             'neos/flow-test',
             'neos/flow',
             'neos/yetanothertestpackage',
-//            'robertlemke/flow/nothingelse'
         ];
 
         $packages = [
             'Packages' => [
-//                'node_modules' => [
-//                    'foo' => [
-//                        'composer.json' => '{"name": "neos/bow", "type": "neos-package"}'
-//                    ]
-//                ],
                 'Application' => [
                     'Neos.Flow.Test' => ['composer.json' => '{"name": "neos/flow-test", "type": "flow-test"}'],
                     'FrameworkCollection' => [
                         'composer.json' => '{"name": "neos/flow-development-collection", "type": "neos-package-collection"}',
-                        'Neos.Flow' => [
-                            'composer.json' => '{"name": "neos/flow", "type": "neos-package"}',
-                        ],
+                        'Neos.Flow' => ['composer.json' => '{"name": "neos/flow", "type": "neos-package"}',],
                         'Neos.YetAnotherTestPackage' => ['composer.json' => '{"name": "neos/yetanothertestpackage", "type": "neos-package"}'],
                     ]
                 ]
@@ -222,7 +214,7 @@ class PackageManagerTest extends UnitTestCase
         $packageStates = require('vfs://Test/Configuration/PackageStates.php');
         $actualPackageKeys = array_keys($packageStates['packages']);
 
-        self::assertEqualsCanonicalizing($expectedPackageKeys, $actualPackageKeys);
+        self::assertSame($expectedPackageKeys, $actualPackageKeys);
     }
 
     /**

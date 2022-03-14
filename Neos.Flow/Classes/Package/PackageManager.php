@@ -597,8 +597,20 @@ class PackageManager
     protected function scanAvailablePackages(): array
     {
         $newPackageStatesConfiguration = ['packages' => []];
-        foreach (self::findComposerPackagesInPathAndInsideCollections($this->packagesBasePath) as $packagePath) {
+
+        $packageGenerator = new \AppendIterator();
+        $packageGenerator->append(new \NoRewindIterator(self::findComposerPackagesInDirectory($this->packagesBasePath)));
+
+        foreach ($packageGenerator as $packagePath) {
             $composerManifest = ComposerUtility::getComposerManifest($packagePath);
+
+            if (isset($composerManifest['type']) && $composerManifest['type'] === 'neos-package-collection') {
+                // the package type "neos-package-collection" indicates a composer package that joins several "flow" packages together.
+                // continue traversal inside the package and append the nested generator to the $packageGenerator.
+                $packageGenerator->append(new \NoRewindIterator(self::findComposerPackagesInDirectory($packagePath)));
+                continue;
+            }
+
             if (!isset($composerManifest['name'])) {
                 throw new InvalidConfigurationException(sprintf('A package composer.json was found at "%s" that contained no "name".', $packagePath), 1445933572);
             }
@@ -631,33 +643,10 @@ class PackageManager
     }
 
     /**
-     * Recursively traverses directories from the given starting points and returns all folder paths that contain a composer.json and
-     * which does NOT have the package type "neos-package-collection", as that indicates a composer package that joins several "real" packages together.
-     * In case a "neos-package-collection" is found the traversal continues inside.
-     *
-     * @param string $startingDirectory
-     * @return \Generator
+     * Traverses directories recursively from the given starting point and yields folder paths, who contain a composer.json.
+     * When a composer.json was found, traversing into lower directories is stopped.
      */
-    protected function findComposerPackagesInPathAndInsideCollections(string $startingDirectory): ?\Generator
-    {
-        foreach (self::findComposerPackagesInPath($startingDirectory) as $packagePath) {
-            $composerManifest = ComposerUtility::getComposerManifest($packagePath);
-            if (isset($composerManifest['type']) && $composerManifest['type'] === 'neos-package-collection') {
-                yield from self::findComposerPackagesInPath($packagePath);
-                continue;
-            }
-            yield $packagePath;
-        }
-    }
-
-    /**
-     * Recursively traverses directories from the given starting points and returns all folder paths that contain a composer.json.
-     * (Stop at folder with composer.json)
-     *
-     * @param string $startingDirectory
-     * @return \Generator
-     */
-    protected function findComposerPackagesInPath(string $startingDirectory): ?\Generator
+    protected function findComposerPackagesInDirectory(string $startingDirectory): \Generator
     {
         $directories = new \DirectoryIterator($startingDirectory);
 
@@ -672,12 +661,11 @@ class PackageManager
 
             $potentialPackageDirectory = $fileInfo->getPathname() . '/';
 
-            if (is_file($potentialPackageDirectory . 'composer.json') === false) {
-                // search recursive for a composer.json
-                yield from self::findComposerPackagesInPath($potentialPackageDirectory);
+            if (is_file($potentialPackageDirectory . 'composer.json')) {
+                // no composer.json was found - search recursive for a composer.json
+                yield from self::findComposerPackagesInDirectory($potentialPackageDirectory);
                 continue;
             }
-
             yield $potentialPackageDirectory;
         }
     }
